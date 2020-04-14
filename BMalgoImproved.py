@@ -1,3 +1,5 @@
+import sys
+
 def zAlgo(string):
     n = len(string)
     zArr = [0]*n
@@ -35,7 +37,7 @@ def zAlgo(string):
     return(zArr)
 
 def getAlphaOrd(letter):
-    num = ord(letter.lower())-97
+    num = ord(letter)
 
     return num
 
@@ -63,20 +65,12 @@ def badChar(pat, amap, count):
 def goodSuffix(zSuffix, m):
     # flips pat and get the z-suffix
     # O(m) - m is len(pat)
-    # zSuffix = zAlgo(pat[::-1])[::-1]
-    # m = len(pat)
     gsArr = [0]*(m+1)
 
     for p in range(m):
-        # print(zSuffix[p])
         j = m - zSuffix[p]
-        # j = m - zSuffix[p]+1
         gsArr[j] = p 
         
-    # shift = m - gsArr[k]
-    # print(zSuffix)
-    # print(gsArr)
-
     return gsArr
 
 def matchedprefix(zArr, m):
@@ -98,12 +92,11 @@ class BoyerMoore(object):
     def __init__(self, pat):
         self.pat = pat
         self.length = len(pat)
-
         self.z = zAlgo(pat)
 
         # count number of unique characters in pat to initialize the size of the table
         # O(m)
-        self.amap = [[-1 for i in range(2)] for j in range(26)]
+        self.amap = [[-1 for i in range(2)] for j in range(256)]
         count = 0
         for i in range(self.length):
             k = getAlphaOrd(self.pat[i])
@@ -111,17 +104,16 @@ class BoyerMoore(object):
                 self.amap[k][1] = count
                 count += 1
         
-        # create bad character table
-        self.bad_char_table = badChar(self.pat, self.amap, count)
-
-        # create good suffix array
-        self.good_suffix_arr = goodSuffix(zAlgo(pat[::-1])[::-1], self.length)
-
-        # create matched prefix array
-        self.matched_prefix_arr = matchedprefix(self.z, self.length)
-  
+        # preprocessing
+        self.bad_char_table = badChar(self.pat, self.amap, count) 
+        self.good_suffix_arr = goodSuffix(zAlgo(pat[::-1])[::-1], self.length)  
+        print(self.good_suffix_arr)
+        self.matched_prefix_arr = matchedprefix(self.z, self.length)    
     
     def badCharRule(self, i, c):
+        # to catch ASCII value that is >255
+        if getAlphaOrd(c) > 255:
+            return 0
         ci = self.amap[getAlphaOrd(c)][1]
         
         # check if need to -1
@@ -134,60 +126,59 @@ class BoyerMoore(object):
 
         k = self.good_suffix_arr[i]
 
-        if k > 0:
-            return self.length - k
-        else:
-            return self.length - self.matched_prefix_arr[i]
+        # check case if good_suffix_arr[k] == 0, then shift by m - matchedprefec[k+1]
+        # denotes the largest suffix == prefix of pat
+        # else m - good_suffix_arr[k+1] - 1 
+        return self.length - k - 1 if k > 0 else self.length - self.matched_prefix_arr[i]
 
     # condition when match is found function
     def matchSkip(self):
-        return self.length - self.matched_prefix_arr[1]
+        return 0 if self.length == 1 else self.length - self.matched_prefix_arr[1]
 
-if __name__ == "__main__":
-    txt = "abcdabcdabcd"
-    pat = "abc"
-    # txt = "aaaaaa"
-    # pat = "aa"
+def search(txt, pat):
     patBM = BoyerMoore(pat)
-
     m = len(pat)
     n = len(txt)
-
-    j = 0 # pointer in txt
+    j = 0   # pointer in txt
+    count = 0
     while j <= n-m:
-        s = 1
+        s = 1   # shift value
         mismatched = False
-        # for k in range(m-1, -1, -1):
-        #     if not pat[k] == txt[j+k]:
-        #         s_badChar = patBM.badCharRule(k, txt[j+k])
-        #         s_goodSuff = patBM.goodSuffixRule(k+1)
-        #         s = max(s, s_badChar, s_goodSuff)
-        #         mismatched = True
-        #         break
-
         resume_val = 0
         pause_val = 0
         k = m-1
         while k >= 0 and k < m:
-            if k >= pause_val or k <= resume_val: 
+            if k >= pause_val or k <= resume_val:   # makes sure k is not reprocessing previous processed window of pat
                 if not pat[k] == txt[j+k]:
                     s_badChar = patBM.badCharRule(k, txt[j+k])
                     s_goodSuff = patBM.goodSuffixRule(k+1)
                     s = max(s, s_badChar, s_goodSuff)
-                    if s_goodSuff > s_badChar and s_goodSuff > s:
+
+                    # check if shift value is taken from good suffix rule, then set pause and resume value of k
+                    if s_goodSuff >= s_badChar and s_goodSuff >= s:
                         resume_val = k-s
                         pause_val = m-s
                     mismatched = True
                     break
                 k -= 1
-            else:
+            else:   # skip to resume value from pause value
                 k = resume_val
 
         if not mismatched:
-            # do match_skip when pat[1...m] fully matches txt[j...j+m-1]
-            s = max(s, patBM.matchSkip())
-            print(j+1)
+            s = max(s, patBM.matchSkip())   # do match_skip when pat[1...m] fully matches txt[j...j+m-1]
+            # print(j+1)  # print the index where pat matched occurs
+            count += 1
 
         j += s
+    print(count)
 
-        
+
+if __name__ == "__main__":
+    # >>python .\BMalgoImproved.py <text file> <pattern file>
+    txtF = sys.argv[1]
+    patF = sys.argv[2]
+    
+    txtF = open(sys.argv[1], "r")
+    patF = open(sys.argv[2], "r")
+
+    search(txtF.read(), patF.read())     
