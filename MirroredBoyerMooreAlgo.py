@@ -109,7 +109,7 @@ class MirroredBoyerMoore(object):
         # big O will be stated in each respective called function
         self.bad_char_table = badChar(self.pat, self.amap, count) 
         self.good_prefix_arr = goodPrefix(zAlgo(pat)[::-1], self.length)[::-1]
-        self.matched_prefix_arr = matchedSuffix(self.z[::-1], self.length)
+        self.matched_suffix_arr = matchedSuffix(self.z[::-1], self.length)
     
     # Function that returns shift value based on bad character rule
     # O(1) - no iterations
@@ -131,7 +131,7 @@ class MirroredBoyerMoore(object):
     # Function deals with condition when match is found.
     # O(1) - no iteration
     def matchSkip(self):
-        return 0 if self.length == 1 else self.length - self.matched_prefix_arr[self.length-2]
+        return 0 if self.length == 1 else self.length - self.matched_suffix_arr[self.length-2]
 
 # O(n) - n is len(txt) 
 # where len(pat) == 1 and each character in txt[1...n] is pat[0] 
