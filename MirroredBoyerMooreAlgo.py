@@ -41,8 +41,7 @@ def zAlgo(string):
 # Function that returns the unique number representation of each letter
 # O(1) - no iterations
 def getAlphaOrd(letter):
-    num = ord(letter)
-    return num
+    return ord(letter)
 
 # Function that create and returns table of bad character rule for pat
 # O(m) - m is len(pat)
@@ -104,26 +103,21 @@ class MirroredBoyerMoore(object):
             if self.amap[k] == None:
                 self.amap[k] = count
                 count += 1
-        print(self.amap)
         
         # preprocessing
         # big O will be stated in each respective called function
         self.bad_char_table = badChar(self.pat, self.amap, count) 
-        print(self.bad_char_table)
         self.good_prefix_arr = goodPrefix(zAlgo(pat)[::-1], self.length)[::-1]
         self.matched_suffix_arr = matchedSuffix(self.z[::-1], self.length)
     
     # Function that returns shift value based on bad character rule
     # O(1) - no iterations
     def badCharRule(self, i, c):
-        # to catch ASCII value that is >255
-        if getAlphaOrd(c) > 255:
-            return 0
+        # to catch ASCII value that is >255 or the mismatched character from txt doesn't exists in pat
+        if getAlphaOrd(c) > 255 or self.amap[getAlphaOrd(c)] == None:
+            return self.length-i-1
         
         ci = self.amap[getAlphaOrd(c)]
-
-        if ci == None:  # ignore if the mismatched character from txt doesn't exists in pat
-            return 0
 
         return self.length-i+1 if self.bad_char_table[ci][i] == -1 else self.bad_char_table[ci][i] - i
 
