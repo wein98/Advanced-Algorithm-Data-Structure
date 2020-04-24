@@ -53,7 +53,7 @@ def badChar(pat, amap, count):
     # update the badChar table
     # O(km) - m is len(pat), k is number of unique characters in pat
     for i in range(m-1, -1, -1):
-        k = amap[getAlphaOrd(pat[i])][1]
+        k = amap[getAlphaOrd(pat[i])]
         bcArr[k][i] = i
         if i != m-1:
             for j in range(count):
@@ -97,17 +97,19 @@ class MirroredBoyerMoore(object):
 
         # count number of unique characters in pat to initialize the size of the table
         # O(m) - m is len(pat)
-        self.amap = [[-1 for i in range(2)] for j in range(256)]
+        self.amap = [None for j in range(256)]
         count = 0
         for i in range(self.length):
             k = getAlphaOrd(self.pat[i])
-            if self.amap[k][1] == -1:
-                self.amap[k][1] = count
+            if self.amap[k] == None:
+                self.amap[k] = count
                 count += 1
+        print(self.amap)
         
         # preprocessing
         # big O will be stated in each respective called function
         self.bad_char_table = badChar(self.pat, self.amap, count) 
+        print(self.bad_char_table)
         self.good_prefix_arr = goodPrefix(zAlgo(pat)[::-1], self.length)[::-1]
         self.matched_suffix_arr = matchedSuffix(self.z[::-1], self.length)
     
@@ -117,7 +119,11 @@ class MirroredBoyerMoore(object):
         # to catch ASCII value that is >255
         if getAlphaOrd(c) > 255:
             return 0
-        ci = self.amap[getAlphaOrd(c)][1]
+        
+        ci = self.amap[getAlphaOrd(c)]
+
+        if ci == None:  # ignore if the mismatched character from txt doesn't exists in pat
+            return 0
 
         return self.length-i+1 if self.bad_char_table[ci][i] == -1 else self.bad_char_table[ci][i] - i
 
@@ -146,6 +152,7 @@ def search(txt, pat):
     n = len(txt)
     occurencces = []
     j = n-m-1   # pointer in txt
+    count = 0
 
     while j >= 0:
         s = 1   # shift value
@@ -159,7 +166,7 @@ def search(txt, pat):
                 if not pat[k] == txt[j+k]:
                     s_badChar = patBM.badCharRule(k, txt[j+k])
                     s_goodPref = patBM.goodPrefixRule(k)
-                    s = max(s, s_badChar, s_goodPref)
+                    s = max(s, max(s_badChar, s_goodPref))
 
                     # check if shift value is taken from good prefix rule, then set pause and resume value of k
                     if s_goodPref >= s_badChar and s_goodPref >= s:
@@ -179,8 +186,11 @@ def search(txt, pat):
             occurencces.append(j+1)     # append ocurrence index to occurencces[]
 
         j -= s
+        count += 1
 
-    printOccurences(occurencces)
+    print(count)
+    print(len(occurencces))
+    # printOccurences(occurencces)
     
 if __name__ == "__main__":
     # >>python .\MirroredBoyerMoore.py <text file> <pattern file>
