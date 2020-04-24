@@ -1,5 +1,7 @@
 import sys
 
+# Gusfield's Z-algorithm
+# O(n) - n is len(string)
 def zAlgo(string):
     n = len(string)
     zArr = [0]*n
@@ -36,10 +38,10 @@ def zAlgo(string):
 
     return(zArr)
 
+# Function that returns the unique number representation of each letter
+# O(1) - no iterations
 def getAlphaOrd(letter):
-    num = ord(letter)
-
-    return num
+    return ord(letter)
 
 # O(km) : m is len(pat), k is number of unique characters in pat
 # note - align mismatched bad character
@@ -50,14 +52,13 @@ def badChar(pat, amap, count):
     # update the badChar table
     # O(km) - m is len(pat), k is number of unique characters in pat
     for i in range(m):
-        k = amap[getAlphaOrd(pat[i])][1]
+        k = amap[getAlphaOrd(pat[i])]
         bcArr[k][i] = i
         if i != 0:
             for j in range(count):
                 if j != k:
                     x = bcArr[j][i-1]
                     bcArr[j][i] = x
-
     return bcArr
 
 # note - align chunk of alpha
@@ -95,26 +96,26 @@ class BoyerMoore(object):
         self.z = zAlgo(pat)
 
         # count number of unique characters in pat to initialize the size of the table
-        # O(m)
-        self.amap = [[-1 for i in range(2)] for j in range(256)]
+        # O(m) - m is len(pat)
+        self.amap = [None for j in range(256)]
         count = 0
         for i in range(self.length):
             k = getAlphaOrd(self.pat[i])
-            if self.amap[k][1] == -1:
-                self.amap[k][1] = count
+            if self.amap[k] == None:
+                self.amap[k] = count
                 count += 1
         
         # preprocessing
         self.bad_char_table = badChar(self.pat, self.amap, count) 
         self.good_suffix_arr = goodSuffix(zAlgo(pat[::-1])[::-1], self.length)  
-        print(self.good_suffix_arr)
         self.matched_prefix_arr = matchedprefix(self.z, self.length)    
     
     def badCharRule(self, i, c):
-        # to catch ASCII value that is >255
-        if getAlphaOrd(c) > 255:
-            return 0
-        ci = self.amap[getAlphaOrd(c)][1]
+        # to catch ASCII value that is >255 or the mismatched character from txt doesn't exists in pat
+        if getAlphaOrd(c) > 255 or self.amap[getAlphaOrd(c)] == None:
+            return i + 1
+
+        ci = self.amap[getAlphaOrd(c)]
         
         # check if need to -1
         return i - self.bad_char_table[ci][i]
@@ -141,6 +142,8 @@ def search(txt, pat):
     n = len(txt)
     j = 0   # pointer in txt
     count = 0
+    occurs = 0
+
     while j <= n-m:
         s = 1   # shift value
         mismatched = False
@@ -167,10 +170,11 @@ def search(txt, pat):
         if not mismatched:
             s = max(s, patBM.matchSkip())   # do match_skip when pat[1...m] fully matches txt[j...j+m-1]
             # print(j+1)  # print the index where pat matched occurs
-            count += 1
+            occurs += 1
 
         j += s
-    print(count)
+        count+=1
+    print(occurs)
 
 
 if __name__ == "__main__":
