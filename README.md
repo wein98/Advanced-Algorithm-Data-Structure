@@ -10,3 +10,4 @@ Context:
 - Boyer Moore's algorithm
 - Boyer Moore's algorithm (mirrored version)
 - Ukkonen's suffix tree
+  - Compute Burrows-Wheeler Transform from Ukkonen's implicit suffix tree
