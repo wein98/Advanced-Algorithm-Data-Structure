@@ -1,34 +1,32 @@
 # Chia Wei Ying
 # 30113199
+from bitarray import bitarray
 
-# convert ASCII char to bitstring
-def ASCIItoBin(x):
-    return getASCIIbin(ord(x))
+# convert ASCII char to bitarray
+def ASCIItoBin(char):
+    x = format(getOrd(char), 'b')
+    if len(x) < 7:
+        pad = '0'*(7-len(x))
+        x = pad + x
+    return bitarray(x)
 
 # get ASCII value in dec
 def getOrd(x):
     return ord(x)
 
-# convert decimal to bitstring
-def bitStringConversion(dec):
-    if dec == 1:
-        return "1"
-    if dec % 2 == 0:
-        return "0" + bitStringConversion(dec//2)
-    else:
-        return "1" + bitStringConversion(dec//2)
-
-def getASCIIbin(dec):
-    x = bitStringConversion(dec)
-    if len(x) < 7:
-        pad = '0'*(7-len(x))
-        x += pad
-    return x[::-1]
-
-# reverse the result from bitStringConversion(dec)
+# get bitarray of dec
 # O(log n) - n = dec
 def getBinary(dec):
-    return bitStringConversion(dec)[::-1]
+    return bitarray(format(dec, 'b'))
+
+# get decimal from bitarray
+# O(n) - n is length of bits in bitarray
+def getDecFromBin(b):
+    i = 0
+    for bit in b:
+        i = (i << 1) | bit
+
+    return i
 
 # Gusfield's Z-algorithm
 # O(n) - n is len(string)

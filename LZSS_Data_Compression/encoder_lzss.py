@@ -5,6 +5,7 @@ import sys
 from FibonacciHeap import *
 from common import *
 from EliasCode import *
+from bitarray import bitarray
 
 class LZSS_encoder:
     def __init__(self, txt, w, l):
@@ -53,7 +54,7 @@ class LZSS_encoder:
         heap = FibonacciHeap()
 
         for i in range(len(self.uniqueChar)):
-            self.uniqueChar[i].append("")   # to store huffman wordcode
+            self.uniqueChar[i].append(bitarray())   # to store huffman wordcode
             heap.insert(self.uniqueChar[i][1], self.uniqueChar[i][0])
 
         # start building huffman word for each unique chars from the heap
@@ -63,10 +64,12 @@ class LZSS_encoder:
                 y = heap.extractMin()
 
                 for i in range(len(x.payload)):
-                    self.uniqueChar[self.amap[getOrd(x.payload[i])]][2] += "0" 
+                    temp = self.uniqueChar[self.amap[getOrd(x.payload[i])]][2]
+                    self.uniqueChar[self.amap[getOrd(x.payload[i])]][2] = bitarray([False]) + temp
                     
                 for i in range(len(y.payload)):
-                    self.uniqueChar[self.amap[getOrd(y.payload[i])]][2] += "1"
+                    temp = self.uniqueChar[self.amap[getOrd(y.payload[i])]][2]
+                    self.uniqueChar[self.amap[getOrd(y.payload[i])]][2] = bitarray([True]) + temp
 
                 resultKey = x.key + y.key
                 resultPayload = x.payload + y.payload
@@ -75,16 +78,12 @@ class LZSS_encoder:
                     heap.insert(resultKey, resultPayload)
         else:   # handles condition when there is only one unique character
             x = heap.extractMin()
-            self.uniqueChar[self.amap[getOrd(x.payload[i])]][2] += "0" 
+            temp = self.uniqueChar[self.amap[getOrd(x.payload[i])]][2]
+            self.uniqueChar[self.amap[getOrd(x.payload[i])]][2] = bitarray([False]) + temp
 
-        # flip the huffman wordcode for each unique characters
+        # compute elias code of length of huffman codeword for each uniqueChar
         for i in range(len(self.uniqueChar)):
-            flip = self.uniqueChar[i][2][::-1]
-
-            # compute elias code of length of huffman codeword for each uniqueChar
-            eliasLen = EliasCode(getBinary(len(flip))).getEliasCode()
-            self.uniqueChar[i][2] = flip
-            self.uniqueChar[i].append(eliasLen)
+            self.uniqueChar[i].append(EliasCode(getBinary(len(self.uniqueChar[i][2]))).getEliasCode())
 
     "Function that encodes the header part with all the precomputed variables"
     # Return:   encoded LZSS for the header part
@@ -94,15 +93,15 @@ class LZSS_encoder:
 
         for i in range(len(self.uniqueChar)):
             x = self.uniqueChar[i]
-            retVal += ASCIItoBin(x[0])
-            retVal += x[3]  # huffman codeword length
-            retVal += x[2]  # huffman codeword
+            retVal += ASCIItoBin(x[0]) + x[3] + x[2]
+            # x[3] - huffman codeword length
+            # x[2] - huffman codeword
 
         return retVal
 
-    "Function that compute LZSS format for each buffered window"
+    "Function that compute LZSS format for each buffered window with normal Z-algo"
     # Due to slicing used, I'm not very sure about the big-O, however the big-O here is just sucks!
-    def ZAlgo(self, k):
+    def getLZSSFormat(self, k):
         x = k - self.window
         window = self.window
         buffer = self.buffer
@@ -122,10 +121,10 @@ class LZSS_encoder:
         length = 0
         offset = 0
         for i in range(self.buffer, buffer+window+1):
-            if z[i] > length: # get the max length
+            if z[i] > length:       # get the max length
                 length = z[i]
                 offset = window-(i-buffer-1)
-            elif z[i] == length:  # get the offset index when there is same max before
+            elif z[i] == length:    # get the offset index when there is same max before
                 offset = window-(i-buffer-1)
 
         return offset, length
@@ -133,16 +132,21 @@ class LZSS_encoder:
     "Function that gets the LZSS Format-0/1 fields"
     # Return: the LZSS Format-0/1 fields
     def computeLZSS(self):
-        j = 2   # j always starts from 2, since len < 3 always uses 1-bit in LZSS
-        retVal = [[1, self.txt[0]], [1, self.txt[1]]]
+        j = 2               # j always starts from 2, since len < 3 always uses 1-bit in LZSS
+        retVal = None
+        if self.length < 2 and self.length > 0: # handles condition when length of text < 2 and not 0
+            retVal = [[1, getOrd(self.txt[0])]]
+        else:
+            retVal = [[1, getOrd(self.txt[0])], [1, getOrd(self.txt[1])]]
+        
         while j < self.length:
-            offset, length = self.ZAlgo(j) 
+            offset, length = self.getLZSSFormat(j) 
             # LZSS rule, length >= 3
             if length >= 3:
                 retVal.append([0, offset, length])
                 length -= 1
             else:
-                retVal.append([1, self.txt[j]])
+                retVal.append([1, getOrd(self.txt[j])])
                 length = 0
             j += length+1
 
@@ -156,31 +160,22 @@ class LZSS_encoder:
         
         for i in range (len(lzssFormat)):
             if lzssFormat[i][0] == 1:
-                data += "1" + self.uniqueChar[self.amap[getOrd(lzssFormat[i][1])]][2]   
+                data += bitarray([True]) + self.uniqueChar[self.amap[lzssFormat[i][1]]][2]   
             else:
-                data += "0" + EliasCode(getBinary(lzssFormat[i][1])).getEliasCode() + EliasCode(getBinary(lzssFormat[i][2])).getEliasCode()
+                data += bitarray([False]) + EliasCode(getBinary(lzssFormat[i][1])).getEliasCode() + EliasCode(getBinary(lzssFormat[i][2])).getEliasCode()
         
         return data
 
     "Function that outputs the entired encoded bitstring of the compression of self.txt"
     def output(self):
         data = self.header + self.data
-        print(data)
         x = len(data) % 8
         # do padding of 0s to the end of the encoded string if len(data) is not a factor of 8
         if x != 0:
-            pad = '0'*(8-x)
-            data += pad
-        
-        print(data)
-
-        byteArray = bytearray()
-        chop = [data[i : i + 8] for i in range(0, len(data), 8)]
-        for i in range(len(chop)):
-            byteArray.append(int(chop[i], 2))
+            data += bitarray([False]*(8-x))
 
         file = open('output_encoder_lzss.bin', "wb")
-        file.write(byteArray)
+        data.tofile(file)
         file.close()
 
 if __name__ == "__main__":

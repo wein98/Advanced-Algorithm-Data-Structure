@@ -17,7 +17,7 @@ class HuffmanTree:
 
         for i in range(len(path)):
                 
-            if path[i] == '1': # traverse to left child
+            if path[i]: # traverse to left child
                 if currNode.right is None:
                     currNode.right = self.Node()
                 currNode = currNode.right
@@ -34,7 +34,7 @@ class HuffmanTree:
         currNode = self.root
 
         for i in range(len(huffman)):
-            if huffman[i] == '1':
+            if huffman[i]:
                 currNode = currNode.left
             else:
                 currNode = currNode.right
@@ -43,7 +43,7 @@ class HuffmanTree:
             return currNode.char
 
     def getNode(self, prevNode, huffman):
-        if huffman == '1':
+        if huffman:
             return prevNode.right
         else:
             return prevNode.left
