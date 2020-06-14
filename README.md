@@ -1,7 +1,7 @@
 # Advanced-Algorithm-Data-Structure
 Algorithms that I have worked on in Advanced Algorithm and Data Structure course in Monash Malaysia.
 
-All the codes are purely built and written by myself, by referring to random resources.
+All the codes are purely built and written by myself, some may be referring to random resources.
 The files naming are not consistent with the context below, I will reorganize them when I have the time :D
 Test modules are not built with these codes, efficiency are not confirmed yet. I will make them if I have time :D
 
@@ -11,3 +11,10 @@ Context:
 - Boyer Moore's algorithm (mirrored version)
 - Ukkonen's suffix tree
   - Compute Burrows-Wheeler Transform from Ukkonen's implicit suffix tree
+- LZSS Data Compression
+  - encoding and decoding
+  - implemented in bitstring
+  - encoding string matching using dumb Z-algo
+  - Elias code
+  - Basic Fibonacci Heap (insert, extract min)
+  - Huffman codeword
